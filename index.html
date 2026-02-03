@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="El Impostor">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="Juego de party para descubrir al impostor">
+    
+    <title>El Impostor - Juego</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .category-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            touch-action: manipulation;
+        }
+
+        .category-btn:active {
+            transform: scale(0.95);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .players-list {
+            margin: 20px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .player-item {
+            background: #f5f5f5;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .remove-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            touch-action: manipulation;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+            touch-action: manipulation;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+
+        .btn-success {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .player-turn {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .player-name-display {
+            font-size: 2em;
+            color: #667eea;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .word-reveal {
+            background: #f8f9fa;
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 30px 0;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .word-text {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .word-text.impostor {
+            color: #ff4757;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .results {
+            margin: 30px 0;
+        }
+
+        .impostor-reveal {
+            background: linear-gradient(135deg, #ff4757 0%, #ff6b6b 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .impostor-reveal span {
+            display: block;
+            font-size: 1.5em;
+            margin-top: 10px;
+        }
+
+        .word-reveal-box {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        .word-reveal-box span {
+            display: block;
+            font-size: 1.5em;
+            color: #667eea;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* Install prompt */
+        .install-prompt {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .install-prompt.show {
+            display: flex;
+        }
+
+        .install-prompt button {
+            background: white;
+            color: #4CAF50;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: auto;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            .word-text {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Install prompt -->
+        <div id="installPrompt" class="install-prompt">
+            <span>📱 Instalá la app en tu celular</span>
+            <button onclick="installApp()">Instalar</button>
+        </div>
+
+        <!-- Pantalla de inicio -->
+        <div id="homeScreen" class="screen active">
+            <h1>🎭 EL IMPOSTOR</h1>
+            <p class="subtitle">Juego de party para descubrir al impostor</p>
+            
+            <div class="input-group">
+                <label>Agregar Jugador</label>
+                <input type="text" id="playerNameHome" placeholder="Nombre del jugador" 
+                       onkeypress="if(event.key==='Enter') addPlayerHome()">
+            </div>
+            
+            <button class="btn btn-primary" onclick="addPlayerHome()">+ Agregar Jugador</button>
+            
+            <div class="players-list" id="playersListHome"></div>
+            
+            <div class="warning-box" id="minPlayersWarningHome">
+                ⚠️ Se necesitan al menos 3 jugadores para comenzar
+            </div>
+            
+            <button class="btn btn-success" id="continueToCategories" 
+                    style="display: none;" onclick="goToCategories()">
+                Continuar →
+            </button>
+        </div>
+
+        <!-- Pantalla de categorías -->
+        <div id="categoriesScreen" class="screen">
+            <h1>🎭 EL IMPOSTOR</h1>
+            <h2>Elegí una categoría</h2>
+            
+            <div class="info-box">
+                <span id="playersCount"></span> listos para jugar
+            </div>
+            
+            <div class="category-grid">
+                <button class="category-btn" onclick="selectCategory('futbol')">
+                    ⚽ Futbolistas
+                </button>
+                <button class="category-btn" onclick="selectCategory('actores')">
+                    🎭 Actores
+                </button>
+                <button class="category-btn" onclick="selectCategory('peliculas')">
+                    🎬 Películas
+                </button>
+                <button class="category-btn" onclick="selectCategory('comidas')">
+                    🍕 Comidas
+                </button>
+                <button class="category-btn" onclick="selectCategory('animales')">
+                    🦁 Animales
+                </button>
+                <button class="category-btn" onclick="selectCategory('profesiones')">
+                    👨‍⚕️ Profesiones
+                </button>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="goBack('homeScreen')">← Volver</button>
+        </div>
+
+        <!-- Pantalla de confirmación -->
+        <div id="readyScreen" class="screen">
+            <h1>🎭 EL IMPOSTOR</h1>
+            <h2>¡Listo para comenzar!</h2>
+            
+            <div class="info-box">
+                Categoría seleccionada: <strong id="selectedCategoryReady"></strong>
+            </div>
+            
+            <div class="warning-box">
+                ⚠️ Asegurate de que todos los jugadores estén listos. 
+                Cada uno verá su palabra en secreto, ¡no espíen!
+            </div>
+            
+            <button class="btn btn-success" onclick="startGame()">🎮 Comenzar Juego</button>
+            <button class="btn btn-secondary" onclick="goBack('categoriesScreen')">← Volver</button>
+        </div>
+
+        <!-- Pantalla de turno -->
+        <div id="turnScreen" class="screen">
+            <h1>🎭 EL IMPOSTOR</h1>
+            
+            <div class="player-turn">
+                <h2>Turno de:</h2>
+                <div class="player-name-display" id="currentPlayerName"></div>
+            </div>
+            
+            <div class="warning-box">
+                ⚠️ <strong id="currentPlayerNameWarning"></strong>, preparate para ver tu palabra. 
+                ¡Los demás no deben mirar la pantalla!
+            </div>
+            
+            <button class="btn btn-primary" onclick="revealWord()">👁️ Ver mi palabra</button>
+        </div>
+
+        <!-- Pantalla de revelación -->
+        <div id="revealScreen" class="screen">
+            <div class="player-turn">
+                <h2>Tu palabra es:</h2>
+            </div>
+            
+            <div class="word-reveal">
+                <div class="word-text" id="revealedWord"></div>
+            </div>
+            
+            <div class="info-box">
+                💡 Memorizá tu palabra y pasá el celular al siguiente jugador
+            </div>
+            
+            <button class="btn btn-primary" onclick="nextPlayer()">Siguiente Jugador →</button>
+        </div>
+
+        <!-- Pantalla de resultados -->
+        <div id="resultsScreen" class="screen">
+            <h1>🎭 EL IMPOSTOR</h1>
+            <h2>¡Todos los jugadores vieron su palabra!</h2>
+            
+            <div class="info-box">
+                💬 Ahora discutan entre todos para descubrir quién es el impostor
+            </div>
+            
+            <div class="warning-box">
+                ⚠️ Cuando estén listos, presioná el botón para revelar quién era el impostor
+            </div>
+            
+            <button class="btn btn-danger" onclick="showFinalReveal()">🎭 Revelar el Impostor</button>
+            <button class="btn btn-secondary" onclick="goBack('homeScreen')">← Inicio</button>
+        </div>
+
+        <!-- Pantalla de revelación final -->
+        <div id="finalRevealScreen" class="screen">
+            <h1>🎭 EL IMPOSTOR</h1>
+            <h2>¡Fin del Juego!</h2>
+            
+            <div class="results">
+                <div class="impostor-reveal">
+                    🎭 El impostor era: <span id="impostorName"></span>
+                </div>
+                
+                <div class="word-reveal-box">
+                    La palabra era: <span id="finalWord"></span>
+                </div>
+            </div>
+            
+            <button class="btn btn-success" onclick="restartGame()">🔄 Jugar de nuevo</button>
+            <button class="btn btn-secondary" onclick="goBack('homeScreen')">← Inicio</button>
+        </div>
+    </div>
+
+    <script>
+        // Categorías predefinidas con palabras
+        const categories = {
+            futbol: ['Messi', 'Cristiano Ronaldo', 'Neymar', 'Mbappé', 'Haaland', 'Pelé', 'Maradona', 'Ronaldinho', 'Benzema', 'Lewandowski', 'Zidane', 'Ronaldo Nazario', 'Iniesta', 'Xavi', 'Modric', 'Kroos', 'De Bruyne', 'Salah', 'Kane', 'Agüero', 'Suárez', 'Griezmann', 'Pogba', 'Ramos', 'Van Dijk', 'Neuer', 'Buffon', 'Casillas', 'Drogba', 'Zlatan Ibrahimovic'],
+            actores: ['Leonardo DiCaprio', 'Tom Hanks', 'Brad Pitt', 'Johnny Depp', 'Will Smith', 'Morgan Freeman', 'Robert Downey Jr', 'Tom Cruise', 'Denzel Washington', 'Samuel L. Jackson', 'Matt Damon', 'Christian Bale', 'Ryan Gosling', 'Jake Gyllenhaal', 'Adam Sandler', 'Jim Carrey', 'Robin Williams', 'Al Pacino', 'Robert De Niro', 'Harrison Ford', 'Keanu Reeves', 'Nicolas Cage', 'George Clooney', 'Ben Affleck', 'Mark Wahlberg', 'Dwayne Johnson', 'Chris Hemsworth', 'Chris Evans', 'Scarlett Johansson', 'Jennifer Lawrence'],
+            peliculas: ['Titanic', 'Avatar', 'El Padrino', 'Inception', 'Matrix', 'Joker', 'Avengers', 'Toy Story', 'Interestelar', 'Gladiador', 'Pulp Fiction', 'El Caballero de la Noche', 'Forrest Gump', 'El Rey León', 'Star Wars', 'Jurassic Park', 'Volver al Futuro', 'El Señor de los Anillos', 'Harry Potter', 'Spider-Man', 'Iron Man', 'Buscando a Nemo', 'Shrek', 'Los Increíbles', 'Frozen', 'Coco', 'Parasite', 'La La Land', 'Mad Max', 'Dunkerque'],
+            comidas: ['Pizza', 'Hamburguesa', 'Sushi', 'Tacos', 'Pasta', 'Asado', 'Empanadas', 'Milanesa', 'Paella', 'Ramen', 'Lasaña', 'Risotto', 'Curry', 'Pad Thai', 'Pho', 'Falafel', 'Shawarma', 'Burrito', 'Quesadilla', 'Hot Dog', 'Kebab', 'Ceviche', 'Tamales', 'Arepas', 'Churrasco', 'Feijoada', 'Sopa', 'Ensalada César', 'Ravioles', 'Tiramisú'],
+            animales: ['León', 'Elefante', 'Tigre', 'Jirafa', 'Delfín', 'Águila', 'Pingüino', 'Koala', 'Panda', 'Lobo', 'Oso', 'Gorila', 'Rinoceronte', 'Hipopótamo', 'Cebra', 'Guepardo', 'Leopardo', 'Cocodrilo', 'Tiburón', 'Ballena', 'Canguro', 'Oso Polar', 'Flamenco', 'Búho', 'Serpiente', 'Tortuga', 'Camello', 'Pulpo', 'Medusa', 'Foca'],
+            profesiones: ['Médico', 'Profesor', 'Ingeniero', 'Chef', 'Piloto', 'Bombero', 'Abogado', 'Músico', 'Actor', 'Deportista', 'Arquitecto', 'Dentista', 'Enfermero', 'Policía', 'Veterinario', 'Periodista', 'Fotógrafo', 'Designer', 'Programador', 'Electricista', 'Plomero', 'Mecánico', 'Contador', 'Psicólogo', 'Farmacéutico', 'Escritor', 'Traductor', 'Científico', 'Astronauta', 'Político']
+        };
+
+        let gameState = {
+            category: '',
+            word: '',
+            players: [],
+            currentPlayerIndex: 0,
+            impostorIndex: -1
+        };
+
+        let deferredPrompt;
+
+        // PWA Installation
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installPrompt').classList.add('show');
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('App instalada');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('installPrompt').classList.remove('show');
+                });
+            }
+        }
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registrado'))
+                .catch(err => console.log('Error al registrar Service Worker:', err));
+        }
+
+        function selectCategory(category) {
+            gameState.category = category;
+            const words = categories[category];
+            gameState.word = words[Math.floor(Math.random() * words.length)];
+            
+            document.getElementById('selectedCategoryReady').textContent = getCategoryName(gameState.category);
+            showScreen('readyScreen');
+        }
+
+        function addPlayerHome() {
+            const input = document.getElementById('playerNameHome');
+            const name = input.value.trim();
+            
+            if (!name) {
+                alert('⚠️ Por favor ingresá un nombre');
+                return;
+            }
+            
+            if (gameState.players.includes(name)) {
+                alert('⚠️ Este jugador ya está en la lista');
+                return;
+            }
+            
+            gameState.players.push(name);
+            input.value = '';
+            updatePlayersListHome();
+            input.focus();
+        }
+
+        function removePlayerHome(index) {
+            gameState.players.splice(index, 1);
+            updatePlayersListHome();
+        }
+
+        function updatePlayersListHome() {
+            const list = document.getElementById('playersListHome');
+            list.innerHTML = '';
+            
+            gameState.players.forEach((player, index) => {
+                const item = document.createElement('div');
+                item.className = 'player-item';
+                item.innerHTML = `
+                    <span>${index + 1}. ${player}</span>
+                    <button class="remove-btn" onclick="removePlayerHome(${index})">✕</button>
+                `;
+                list.appendChild(item);
+            });
+            
+            const minWarning = document.getElementById('minPlayersWarningHome');
+            const continueBtn = document.getElementById('continueToCategories');
+            
+            if (gameState.players.length >= 3) {
+                minWarning.style.display = 'none';
+                continueBtn.style.display = 'block';
+            } else {
+                minWarning.style.display = 'block';
+                continueBtn.style.display = 'none';
+            }
+        }
+
+        function goToCategories() {
+            if (gameState.players.length < 3) {
+                alert('⚠️ Se necesitan al menos 3 jugadores');
+                return;
+            }
+            
+            document.getElementById('playersCount').textContent = `${gameState.players.length} jugadores`;
+            showScreen('categoriesScreen');
+        }
+
+        function getCategoryName(category) {
+            const names = {
+                futbol: '⚽ Futbolistas',
+                actores: '🎭 Actores',
+                peliculas: '🎬 Películas',
+                comidas: '🍕 Comidas',
+                animales: '🦁 Animales',
+                profesiones: '👨‍⚕️ Profesiones'
+            };
+            return names[category] || category;
+        }
+
+        function startGame() {
+            if (gameState.players.length < 3) {
+                alert('⚠️ Se necesitan al menos 3 jugadores');
+                return;
+            }
+            
+            gameState.impostorIndex = Math.floor(Math.random() * gameState.players.length);
+            gameState.currentPlayerIndex = 0;
+            
+            showPlayerTurn();
+        }
+
+        function showPlayerTurn() {
+            const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+            document.getElementById('currentPlayerName').textContent = currentPlayer;
+            document.getElementById('currentPlayerNameWarning').textContent = currentPlayer;
+            showScreen('turnScreen');
+        }
+
+        function revealWord() {
+            const wordElement = document.getElementById('revealedWord');
+            const isImpostor = gameState.currentPlayerIndex === gameState.impostorIndex;
+            
+            if (isImpostor) {
+                wordElement.textContent = '🎭 IMPOSTOR';
+                wordElement.className = 'word-text impostor';
+            } else {
+                wordElement.textContent = gameState.word;
+                wordElement.className = 'word-text';
+            }
+            
+            showScreen('revealScreen');
+        }
+
+        function nextPlayer() {
+            gameState.currentPlayerIndex++;
+            
+            if (gameState.currentPlayerIndex >= gameState.players.length) {
+                showResults();
+            } else {
+                showPlayerTurn();
+            }
+        }
+
+        function showResults() {
+            showScreen('resultsScreen');
+        }
+
+        function showFinalReveal() {
+            document.getElementById('impostorName').textContent = gameState.players[gameState.impostorIndex];
+            document.getElementById('finalWord').textContent = gameState.word;
+            showScreen('finalRevealScreen');
+        }
+
+        function restartGame() {
+            gameState.category = '';
+            gameState.word = '';
+            gameState.currentPlayerIndex = 0;
+            gameState.impostorIndex = -1;
+            
+            showScreen('categoriesScreen');
+        }
+
+        function goBack(screenId) {
+            showScreen(screenId);
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+    </script>
+</body>
+</html>
