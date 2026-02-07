@@ -472,8 +472,8 @@
             <h2>¡Fin del Juego!</h2>
             
             <div class="results">
-                <div class="impostor-reveal">
-                    🎭 El impostor era: <span id="impostorName"></span>
+                <div class="impostor-reveal" id="impostorRevealContainer">
+                    <!-- Se llenará dinámicamente con JavaScript -->
                 </div>
                 
                 <div class="word-reveal-box">
@@ -502,7 +502,7 @@
             word: '',
             players: [],
             currentPlayerIndex: 0,
-            impostorIndex: -1
+            impostorIndices: [] // Cambiado a array para soportar múltiples impostores
         };
 
         let deferredPrompt;
@@ -634,7 +634,18 @@
             // Mezclar el orden de los jugadores aleatoriamente
             gameState.players = shuffleArray([...gameState.players]);
             
-            gameState.impostorIndex = Math.floor(Math.random() * gameState.players.length);
+            // Determinar la cantidad de impostores según el número de jugadores
+            const numImpostors = gameState.players.length > 10 ? 2 : 1;
+            
+            // Seleccionar impostores aleatorios únicos
+            gameState.impostorIndices = [];
+            while (gameState.impostorIndices.length < numImpostors) {
+                const randomIndex = Math.floor(Math.random() * gameState.players.length);
+                if (!gameState.impostorIndices.includes(randomIndex)) {
+                    gameState.impostorIndices.push(randomIndex);
+                }
+            }
+            
             gameState.currentPlayerIndex = 0;
             
             showPlayerTurn();
@@ -649,7 +660,7 @@
 
         function revealWord() {
             const wordElement = document.getElementById('revealedWord');
-            const isImpostor = gameState.currentPlayerIndex === gameState.impostorIndex;
+            const isImpostor = gameState.impostorIndices.includes(gameState.currentPlayerIndex);
             
             if (isImpostor) {
                 wordElement.textContent = '🎭 IMPOSTOR';
@@ -677,7 +688,19 @@
         }
 
         function showFinalReveal() {
-            document.getElementById('impostorName').textContent = gameState.players[gameState.impostorIndex];
+            const container = document.getElementById('impostorRevealContainer');
+            
+            if (gameState.impostorIndices.length === 1) {
+                // Un solo impostor
+                container.innerHTML = `🎭 El impostor era: <span>${gameState.players[gameState.impostorIndices[0]]}</span>`;
+            } else {
+                // Múltiples impostores
+                const impostorNames = gameState.impostorIndices
+                    .map(index => gameState.players[index])
+                    .join(' y ');
+                container.innerHTML = `🎭 Los impostores eran: <span>${impostorNames}</span>`;
+            }
+            
             document.getElementById('finalWord').textContent = gameState.word;
             showScreen('finalRevealScreen');
         }
@@ -686,7 +709,7 @@
             gameState.category = '';
             gameState.word = '';
             gameState.currentPlayerIndex = 0;
-            gameState.impostorIndex = -1;
+            gameState.impostorIndices = [];
             
             showScreen('categoriesScreen');
         }
@@ -704,4 +727,3 @@
     </script>
 </body>
 </html>
-
