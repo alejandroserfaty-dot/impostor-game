@@ -1,4 +1,4 @@
-const CACHE_NAME = 'impostor-game-v1';
+const CACHE_NAME = 'impostor-game-v2';
 const urlsToCache = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
+      .then(() => self.skipWaiting()) // Forzar activación inmediata
   );
 });
 
@@ -26,7 +27,7 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim()) // Tomar control inmediatamente
   );
 });
 
