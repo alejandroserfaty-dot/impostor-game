@@ -10,7 +10,6 @@
     <meta name="description" content="Juego de party para descubrir al impostor">
     
     <title>El Impostor - Juego</title>
-
     
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon-192.png">
@@ -637,6 +636,7 @@
             
             // Determinar la cantidad de impostores según el número de jugadores
             const numImpostors = gameState.players.length > 10 ? 2 : 1;
+            console.log(`Total jugadores: ${gameState.players.length}, Impostores a seleccionar: ${numImpostors}`);
             
             // Seleccionar impostores aleatorios únicos
             gameState.impostorIndices = [];
@@ -646,6 +646,9 @@
                     gameState.impostorIndices.push(randomIndex);
                 }
             }
+            
+            console.log(`Impostores seleccionados (índices): ${gameState.impostorIndices.join(', ')}`);
+            console.log(`Nombres de los impostores: ${gameState.impostorIndices.map(i => gameState.players[i]).join(', ')}`);
             
             gameState.currentPlayerIndex = 0;
             
