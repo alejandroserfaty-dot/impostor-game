@@ -9,11 +9,6 @@
     <meta name="theme-color" content="#667eea">
     <meta name="description" content="Juego de party para descubrir al impostor">
     
-    <!-- Prevent caching -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    
     <title>El Impostor - Juego</title>
     
     <link rel="manifest" href="manifest.json">
@@ -320,6 +315,81 @@
             margin-left: auto;
         }
 
+        /* Game mode toggle */
+        .game-mode-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid #e0e0e0;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .toggle-label {
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .mode-description {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 480px) {
             .container {
@@ -411,6 +481,27 @@
                 Categoría seleccionada: <strong id="selectedCategoryReady"></strong>
             </div>
             
+            <!-- Modo de juego -->
+            <div class="game-mode-box" id="gameModeBox">
+                <div style="font-weight: 600; color: #333; margin-bottom: 10px;">
+                    ⚙️ Modo de Juego
+                </div>
+                <div class="toggle-container">
+                    <div>
+                        <div class="toggle-label">
+                            🍺 Jugar con Borracho
+                        </div>
+                        <div class="mode-description" id="modeDescription">
+                            Un jugador verá una palabra similar
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="drunkModeToggle" onchange="updateModeDescription()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
             <div class="warning-box">
                 ⚠️ Asegurate de que todos los jugadores estén listos. 
                 Cada uno verá su palabra en secreto, ¡no espíen!
@@ -481,6 +572,10 @@
                     <!-- Se llenará dinámicamente con JavaScript -->
                 </div>
                 
+                <div class="impostor-reveal" id="drunkRevealContainer" style="display: none; background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%); margin-top: 15px;">
+                    <!-- Se llenará dinámicamente con JavaScript -->
+                </div>
+                
                 <div class="word-reveal-box">
                     La palabra era: <span id="finalWord"></span>
                 </div>
@@ -495,11 +590,208 @@
         // Categorías predefinidas con palabras
         const categories = {
             futbol: ['Messi', 'Cristiano Ronaldo', 'Neymar', 'Mbappé', 'Haaland', 'Pelé', 'Maradona', 'Ronaldinho', 'Benzema', 'Lewandowski', 'Zidane', 'Ronaldo Nazario', 'Iniesta', 'Xavi', 'Modric', 'Kroos', 'De Bruyne', 'Salah', 'Kane', 'Agüero', 'Suárez', 'Griezmann', 'Pogba', 'Ramos', 'Van Dijk', 'Neuer', 'Buffon', 'Casillas', 'Drogba', 'Zlatan Ibrahimovic'],
-            actores: ['Leonardo DiCaprio', 'Tom Hanks', 'Brad Pitt', 'Johnny Depp', 'Will Smith', 'Morgan Freeman', 'Robert Downey Jr', 'Tom Cruise', 'Denzel Washington', 'Samuel L. Jackson', 'Matt Damon', 'Christian Bale', 'Ryan Gosling', 'Jake Gyllenhaal', 'Adam Sandler', 'Jim Carrey', 'Robin Williams', 'Al Pacino', 'Robert De Niro', 'Harrison Ford', 'Keanu Reeves', 'Nicolas Cage', 'George Clooney', 'Ben Affleck', 'Mark Wahlberg', 'Dwayne Johnson', 'Chris Hemsworth', 'Chris Evans', 'Scarlett Johansson', 'Jennifer Lawrence'],
-            peliculas: ['Titanic', 'Avatar', 'El Padrino', 'Inception', 'Matrix', 'Joker', 'Avengers', 'Toy Story', 'Interestelar', 'Gladiador', 'Pulp Fiction', 'El Caballero de la Noche', 'Forrest Gump', 'El Rey León', 'Star Wars', 'Jurassic Park', 'Volver al Futuro', 'El Señor de los Anillos', 'Harry Potter', 'Spider-Man', 'Iron Man', 'Buscando a Nemo', 'Shrek', 'Los Increíbles', 'Frozen', 'Coco', 'Parasite', 'La La Land', 'Mad Max', 'Dunkerque'],
-            comidas: ['Pizza', 'Hamburguesa', 'Sushi', 'Tacos', 'Pasta', 'Asado', 'Empanadas', 'Milanesa', 'Paella', 'Ramen', 'Lasaña', 'Risotto', 'Curry', 'Pad Thai', 'Pho', 'Falafel', 'Shawarma', 'Burrito', 'Quesadilla', 'Hot Dog', 'Kebab', 'Ceviche', 'Tamales', 'Arepas', 'Churrasco', 'Feijoada', 'Sopa', 'Ensalada César', 'Ravioles', 'Tiramisú'],
+            actores: ['Leonardo DiCaprio', 'Tom Hanks', 'Brad Pitt', 'Johnny Depp', 'Will Smith', 'Morgan Freeman', 'Robert Downey Jr', 'Tom Cruise', 'Denzel Washington', 'Samuel L. Jackson', 'Matt Damon', 'Christian Bale', 'Ryan Gosling', 'Ricardo Darín', 'Adam Sandler', 'Jim Carrey', 'Robin Williams', 'Al Pacino', 'Robert De Niro', 'Harrison Ford', 'Keanu Reeves', 'Nicolas Cage', 'George Clooney', 'Ben Affleck', 'Guillermo Francella', 'Dwayne Johnson', 'Chris Hemsworth', 'Chris Evans', 'Scarlett Johansson', 'Jennifer Lawrence'],
+            peliculas: ['Titanic', 'Avatar', 'El Padrino', 'Matrix', 'Joker', 'Avengers', 'Toy Story', 'Interestelar', 'Gladiador', 'Pulp Fiction', 'El Caballero de la Noche', 'Forrest Gump', 'El Rey León', 'Star Wars', 'Jurassic Park', 'Volver al Futuro', 'El Señor de los Anillos', 'Harry Potter', 'Spider-Man', 'Iron Man', 'Buscando a Nemo', 'Shrek', 'Los Increíbles', 'Frozen', 'Coco', 'Parasite', 'La La Land', 'Mad Max', 'Blancanieves', 'Kill Bill'],
+            comidas: ['Pizza', 'Hamburguesa', 'Sushi', 'Tacos', 'Ñoquis', 'Asado', 'Empanadas', 'Milanesa', 'Paella', 'Ramen', 'Lasaña', 'Risotto', 'Curry', 'Suprema de Pollo', 'Locro', 'Falafel', 'Shawarma', 'Burrito', 'Quesadilla', 'Hot Dog', 'Choripán', 'Ceviche', 'Pastel de Papas', 'Arepas', 'Churrasco', 'Feijoada', 'Guiso', 'Ensalada César', 'Ravioles', 'Tiramisú', 'Buñuelos de Acelga'],
             animales: ['León', 'Elefante', 'Tigre', 'Jirafa', 'Delfín', 'Águila', 'Pingüino', 'Koala', 'Panda', 'Lobo', 'Oso', 'Gorila', 'Rinoceronte', 'Hipopótamo', 'Cebra', 'Guepardo', 'Leopardo', 'Cocodrilo', 'Tiburón', 'Ballena', 'Canguro', 'Oso Polar', 'Flamenco', 'Búho', 'Serpiente', 'Tortuga', 'Camello', 'Pulpo', 'Medusa', 'Foca'],
-            profesiones: ['Médico', 'Profesor', 'Ingeniero', 'Chef', 'Piloto', 'Bombero', 'Abogado', 'Músico', 'Actor', 'Deportista', 'Arquitecto', 'Dentista', 'Enfermero', 'Policía', 'Veterinario', 'Periodista', 'Fotógrafo', 'Designer', 'Programador', 'Electricista', 'Plomero', 'Mecánico', 'Contador', 'Psicólogo', 'Farmacéutico', 'Escritor', 'Traductor', 'Científico', 'Astronauta', 'Político']
+            profesiones: ['Médico', 'Profesor', 'Ingeniero', 'Chef', 'Piloto', 'Bombero', 'Abogado', 'Músico', 'Actor', 'Deportista', 'Arquitecto', 'Dentista', 'Enfermero', 'Policía', 'Veterinario', 'Periodista', 'Fotógrafo', 'Diseñador Gráfico', 'Programador', 'Electricista', 'Plomero', 'Mecánico', 'Contador', 'Psicólogo', 'Farmacéutico', 'Escritor', 'Traductor', 'Científico', 'Astronauta', 'Político']
+        };
+
+        // Palabras similares para el rol del Borracho
+        const similarWords = {
+            futbol: {
+                'Messi': 'Maradona',
+                'Cristiano Ronaldo': 'Messi',
+                'Neymar': 'Mbappé',
+                'Mbappé': 'Haaland',
+                'Haaland': 'Mbappé',
+                'Pelé': 'Maradona',
+                'Maradona': 'Pelé',
+                'Ronaldinho': 'Ronaldo Nazario',
+                'Benzema': 'Lewandowski',
+                'Lewandowski': 'Benzema',
+                'Zidane': 'Iniesta',
+                'Ronaldo Nazario': 'Ronaldinho',
+                'Iniesta': 'Xavi',
+                'Xavi': 'Modric',
+                'Modric': 'Kroos',
+                'Kroos': 'Modric',
+                'De Bruyne': 'Modric',
+                'Salah': 'Kane',
+                'Kane': 'Agüero',
+                'Agüero': 'Suárez',
+                'Suárez': 'Griezmann',
+                'Griezmann': 'Pogba',
+                'Pogba': 'Griezmann',
+                'Ramos': 'Van Dijk',
+                'Van Dijk': 'Ramos',
+                'Neuer': 'Buffon',
+                'Buffon': 'Casillas',
+                'Casillas': 'Neuer',
+                'Drogba': 'Zlatan Ibrahimovic',
+                'Zlatan Ibrahimovic': 'Drogba'
+            },
+            actores: {
+                'Leonardo DiCaprio': 'Brad Pitt',
+                'Tom Hanks': 'Tom Cruise',
+                'Brad Pitt': 'Leonardo DiCaprio',
+                'Johnny Depp': 'Nicolas Cage',
+                'Will Smith': 'Denzel Washington',
+                'Morgan Freeman': 'Samuel L. Jackson',
+                'Robert Downey Jr': 'Chris Evans',
+                'Tom Cruise': 'Tom Hanks',
+                'Denzel Washington': 'Will Smith',
+                'Samuel L. Jackson': 'Morgan Freeman',
+                'Matt Damon': 'Ben Affleck',
+                'Christian Bale': 'Ryan Gosling',
+                'Ryan Gosling': 'Christian Bale',
+                'Ricardo Darín': 'Guillermo Francella',
+                'Adam Sandler': 'Jim Carrey',
+                'Jim Carrey': 'Robin Williams',
+                'Robin Williams': 'Jim Carrey',
+                'Al Pacino': 'Robert De Niro',
+                'Robert De Niro': 'Al Pacino',
+                'Harrison Ford': 'Keanu Reeves',
+                'Keanu Reeves': 'Harrison Ford',
+                'Nicolas Cage': 'Johnny Depp',
+                'George Clooney': 'Ben Affleck',
+                'Ben Affleck': 'Matt Damon',
+                'Guillermo Francella': 'Ricardo Darín',
+                'Dwayne Johnson': 'Chris Hemsworth',
+                'Chris Hemsworth': 'Chris Evans',
+                'Chris Evans': 'Chris Hemsworth',
+                'Scarlett Johansson': 'Jennifer Lawrence',
+                'Jennifer Lawrence': 'Scarlett Johansson'
+            },
+            peliculas: {
+                'Titanic': 'Avatar',
+                'Avatar': 'Titanic',
+                'El Padrino': 'Pulp Fiction',
+                'Matrix': 'Kill Bill',
+                'Joker': 'El Caballero de la Noche',
+                'Avengers': 'Iron Man',
+                'Toy Story': 'Buscando a Nemo',
+                'Interestelar': 'Matrix',
+                'Gladiador': 'Mad Max',
+                'Pulp Fiction': 'El Padrino',
+                'El Caballero de la Noche': 'Joker',
+                'Forrest Gump': 'Volver al Futuro',
+                'El Rey León': 'Buscando a Nemo',
+                'Star Wars': 'El Señor de los Anillos',
+                'Jurassic Park': 'Avatar',
+                'Volver al Futuro': 'Forrest Gump',
+                'El Señor de los Anillos': 'Harry Potter',
+                'Harry Potter': 'El Señor de los Anillos',
+                'Spider-Man': 'Iron Man',
+                'Iron Man': 'Spider-Man',
+                'Buscando a Nemo': 'Toy Story',
+                'Shrek': 'Los Increíbles',
+                'Los Increíbles': 'Shrek',
+                'Frozen': 'Coco',
+                'Coco': 'Frozen',
+                'Parasite': 'Joker',
+                'La La Land': 'Coco',
+                'Mad Max': 'Gladiador',
+                'Blancanieves': 'Frozen',
+                'Kill Bill': 'Matrix'
+            },
+            comidas: {
+                'Pizza': 'Hamburguesa',
+                'Hamburguesa': 'Hot Dog',
+                'Sushi': 'Ramen',
+                'Tacos': 'Burrito',
+                'Ñoquis': 'Ravioles',
+                'Asado': 'Churrasco',
+                'Empanadas': 'Pastel de Papas',
+                'Milanesa': 'Asado',
+                'Paella': 'Risotto',
+                'Ramen': 'Guiso',
+                'Lasaña': 'Ravioles',
+                'Risotto': 'Paella',
+                'Curry': 'Locro',
+                'Suprema de Pollo': 'Milanesa',
+                'Locro': 'Guiso',
+                'Falafel': 'Shawarma',
+                'Shawarma': 'Choripán',
+                'Burrito': 'Quesadilla',
+                'Quesadilla': 'Tacos',
+                'Hot Dog': 'Hamburguesa',
+                'Choripán': 'Hot Dog',
+                'Ceviche': 'Sushi',
+                'Pastel de Papas': 'Empanadas',
+                'Arepas': 'Empanadas',
+                'Churrasco': 'Asado',
+                'Feijoada': 'Churrasco',
+                'Guiso': 'Ramen',
+                'Ensalada César': 'Buñuelos de Acelga',
+                'Ravioles': 'Lasaña',
+                'Tiramisú': 'Risotto',
+                'Buñuelos de Acelga': 'Ensalada César'
+            },
+            animales: {
+                'León': 'Tigre',
+                'Elefante': 'Rinoceronte',
+                'Tigre': 'Leopardo',
+                'Jirafa': 'Elefante',
+                'Delfín': 'Ballena',
+                'Águila': 'Búho',
+                'Pingüino': 'Foca',
+                'Koala': 'Panda',
+                'Panda': 'Koala',
+                'Lobo': 'Oso',
+                'Oso': 'Oso Polar',
+                'Gorila': 'Chimpancé',
+                'Rinoceronte': 'Hipopótamo',
+                'Hipopótamo': 'Rinoceronte',
+                'Cebra': 'Jirafa',
+                'Guepardo': 'Leopardo',
+                'Leopardo': 'Tigre',
+                'Cocodrilo': 'Serpiente',
+                'Tiburón': 'Ballena',
+                'Ballena': 'Delfín',
+                'Canguro': 'Koala',
+                'Oso Polar': 'Pingüino',
+                'Flamenco': 'Águila',
+                'Búho': 'Águila',
+                'Serpiente': 'Cocodrilo',
+                'Tortuga': 'Foca',
+                'Camello': 'Jirafa',
+                'Pulpo': 'Medusa',
+                'Medusa': 'Pulpo',
+                'Foca': 'Pingüino'
+            },
+            profesiones: {
+                'Médico': 'Enfermero',
+                'Profesor': 'Maestro',
+                'Ingeniero': 'Arquitecto',
+                'Chef': 'Cocinero',
+                'Piloto': 'Astronauta',
+                'Bombero': 'Policía',
+                'Abogado': 'Juez',
+                'Músico': 'Cantante',
+                'Actor': 'Director',
+                'Deportista': 'Entrenador',
+                'Arquitecto': 'Ingeniero',
+                'Dentista': 'Médico',
+                'Enfermero': 'Médico',
+                'Policía': 'Bombero',
+                'Veterinario': 'Médico',
+                'Periodista': 'Escritor',
+                'Fotógrafo': 'Artista',
+                'Diseñador Gráfico': 'Arquitecto',
+                'Programador': 'Ingeniero',
+                'Electricista': 'Plomero',
+                'Plomero': 'Mecánico',
+                'Mecánico': 'Electricista',
+                'Contador': 'Economista',
+                'Psicólogo': 'Psiquiatra',
+                'Farmacéutico': 'Médico',
+                'Escritor': 'Periodista',
+                'Traductor': 'Profesor',
+                'Científico': 'Investigador',
+                'Astronauta': 'Piloto',
+                'Político': 'Senador'
+            }
         };
 
         let gameState = {
@@ -507,7 +799,9 @@
             word: '',
             players: [],
             currentPlayerIndex: 0,
-            impostorIndices: [] // Cambiado a array para soportar múltiples impostores
+            impostorIndices: [], // Array para soportar múltiples impostores
+            drunkIndex: -1, // Índice del borracho
+            drunkWord: '' // Palabra que ve el borracho
         };
 
         let deferredPrompt;
@@ -545,7 +839,34 @@
             gameState.word = words[Math.floor(Math.random() * words.length)];
             
             document.getElementById('selectedCategoryReady').textContent = getCategoryName(gameState.category);
+            
+            // Mostrar u ocultar el toggle del borracho según cantidad de jugadores
+            const gameModeBox = document.getElementById('gameModeBox');
+            const drunkToggle = document.getElementById('drunkModeToggle');
+            
+            if (gameState.players.length > 6) {
+                gameModeBox.style.display = 'block';
+                drunkToggle.checked = true; // Por defecto activado si hay más de 6
+            } else {
+                gameModeBox.style.display = 'none';
+                drunkToggle.checked = false;
+            }
+            
+            updateModeDescription();
             showScreen('readyScreen');
+        }
+
+        function updateModeDescription() {
+            const drunkToggle = document.getElementById('drunkModeToggle');
+            const description = document.getElementById('modeDescription');
+            
+            if (drunkToggle.checked) {
+                description.textContent = 'Un jugador verá una palabra similar';
+                description.style.color = '#ff9800';
+            } else {
+                description.textContent = 'Modo clásico sin borracho';
+                description.style.color = '#666';
+            }
         }
 
         function addPlayerHome() {
@@ -651,6 +972,28 @@
                 }
             }
             
+            // Seleccionar borracho si hay más de 6 jugadores Y el modo está activado
+            gameState.drunkIndex = -1;
+            gameState.drunkWord = '';
+            
+            const drunkModeEnabled = document.getElementById('drunkModeToggle').checked;
+            
+            if (gameState.players.length > 6 && drunkModeEnabled) {
+                // Seleccionar un jugador que NO sea impostor
+                let availableIndices = [];
+                for (let i = 0; i < gameState.players.length; i++) {
+                    if (!gameState.impostorIndices.includes(i)) {
+                        availableIndices.push(i);
+                    }
+                }
+                
+                gameState.drunkIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+                
+                // Asignar palabra similar
+                const similarWordMap = similarWords[gameState.category];
+                gameState.drunkWord = similarWordMap[gameState.word] || gameState.word;
+            }
+            
             gameState.currentPlayerIndex = 0;
             
             showPlayerTurn();
@@ -666,10 +1009,14 @@
         function revealWord() {
             const wordElement = document.getElementById('revealedWord');
             const isImpostor = gameState.impostorIndices.includes(gameState.currentPlayerIndex);
+            const isDrunk = gameState.currentPlayerIndex === gameState.drunkIndex;
             
             if (isImpostor) {
                 wordElement.textContent = '🎭 IMPOSTOR';
                 wordElement.className = 'word-text impostor';
+            } else if (isDrunk) {
+                wordElement.textContent = gameState.drunkWord;
+                wordElement.className = 'word-text';
             } else {
                 wordElement.textContent = gameState.word;
                 wordElement.className = 'word-text';
@@ -706,6 +1053,15 @@
                 container.innerHTML = `🎭 Los impostores eran: <span>${impostorNames}</span>`;
             }
             
+            // Mostrar borracho si existe
+            const drunkContainer = document.getElementById('drunkRevealContainer');
+            if (gameState.drunkIndex >= 0) {
+                drunkContainer.style.display = 'block';
+                drunkContainer.innerHTML = `🍺 El borracho era: <span>${gameState.players[gameState.drunkIndex]}</span><br><small>(Vio: "${gameState.drunkWord}")</small>`;
+            } else {
+                drunkContainer.style.display = 'none';
+            }
+            
             document.getElementById('finalWord').textContent = gameState.word;
             showScreen('finalRevealScreen');
         }
@@ -715,6 +1071,8 @@
             gameState.word = '';
             gameState.currentPlayerIndex = 0;
             gameState.impostorIndices = [];
+            gameState.drunkIndex = -1;
+            gameState.drunkWord = '';
             
             showScreen('categoriesScreen');
         }
